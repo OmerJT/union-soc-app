@@ -34,9 +34,9 @@ Not doing performance under load, security hacking, or testing on real devices.
 - UI checks
 - Cross-platform
 
-## How We Designed Tests
+## Tests Design
 
-**Equivalence Partitioning:** Split inputs into good and bad groups.
+**Equivalence Partion** Split inputs into good and bad groups.
 
 For example, user registration: valid UP numbers like UP123456, invalid like too short or non-numeric. Admins skip UP.
 
