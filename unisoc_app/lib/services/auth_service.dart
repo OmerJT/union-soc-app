@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Service class for managing user authentication and API communication.
+/// Handles login, registration, token management, and user profile operations.
+/// Uses JWT tokens for API authentication and SharedPreferences for local storage.
 class AuthService extends ChangeNotifier {
   String? _token;
   String? _role;
@@ -14,13 +17,16 @@ class AuthService extends ChangeNotifier {
   String? get role => _role;
   String? get username => _username;
 
+  /// Base URL for the Django REST API backend
   static const String baseUrl = 'http://127.0.0.1:8000/api';
 
+  /// Headers for authenticated API requests
   Map<String, String> get authHeaders => {
         'Authorization': 'Bearer $_token',
         'Content-Type': 'application/json',
       };
 
+  /// Load authentication token from local storage on app startup
   Future<void> loadToken() async {
     final prefs = await SharedPreferences.getInstance();
     _token = prefs.getString('token');
