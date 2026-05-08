@@ -125,3 +125,22 @@ class UniSocAPITestCase(APITestCase):
         leave = self.client.post(reverse('society-leave', args=[self.society.id]))
         self.assertEqual(leave.status_code, status.HTTP_200_OK)
         self.assertFalse(Membership.objects.filter(user=self.profile, society=self.society).exists())
+
+    def test_search_and_category_filter_societies(self):
+        """Test society search and filtering functionality."""
+        Society.objects.create(name='Football Society', category='sports')
+        Society.objects.create(name='Computer Science Society', category='academic')
+
+        # Test search
+        response = self.client.get(reverse('society-list-create'), {'search': 'Computing'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['name'], 'Computing Society')
+
+        # Test category filter
+        response = self.client.get(reverse('society-list-create'), {'category': 'academic'})
+        self.assertEqual(len(response.data), 2)  # Computing and Computer Science
+
+        # Test combined search and filter
+        response = self.client.get(reverse('society-list-create'), {'search': 'Soc', 'category': 'academic'})
+        self.assertEqual(len(response.data), 2)
