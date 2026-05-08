@@ -4,6 +4,8 @@ import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'services/auth_service.dart';
 
+/// Main entry point for the UniSoc Flutter application.
+/// Initializes the app with authentication state management using Provider.
 void main() {
   runApp(
     ChangeNotifierProvider(
@@ -13,6 +15,8 @@ void main() {
   );
 }
 
+/// Root widget of the UniSoc application.
+/// Manages authentication state and displays appropriate screens based on login status.
 class UniSocApp extends StatefulWidget {
   const UniSocApp({super.key});
 
@@ -27,6 +31,7 @@ class _UniSocAppState extends State<UniSocApp> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_loaded) {
+      // Load authentication token on app startup
       Provider.of<AuthService>(context, listen: false).loadToken().then((_) {
         if (mounted) setState(() => _loaded = true);
       });
