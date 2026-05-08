@@ -1,0 +1,154 @@
+# UniSoc API — Day 1 Test Reference
+# Use this to verify every endpoint works after setup.
+# Test in Postman, Insomnia, or curl.
+
+BASE = http://127.0.0.1:8000/api
+
+====================================================
+1. REGISTER A NEW USER
+====================================================
+POST {{BASE}}/auth/register/
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "email": "test@port.ac.uk",
+  "password": "Password123",
+  "first_name": "Test",
+  "last_name": "User",
+  "up_number": "UP123456",
+  "role": "user"
+}
+
+Expected: 201 Created + access/refresh tokens
+
+====================================================
+2. REGISTER AN ADMIN
+====================================================
+POST {{BASE}}/auth/register/
+Content-Type: application/json
+
+{
+  "username": "adminuser",
+  "email": "admin@port.ac.uk",
+  "password": "Password123",
+  "first_name": "Admin",
+  "last_name": "User",
+  "role": "admin"
+}
+
+====================================================
+3. LOGIN
+====================================================
+POST {{BASE}}/auth/login/
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "password": "Password123"
+}
+
+Expected: 200 OK + { access, refresh, role, username }
+→ Copy the "access" token for all further requests.
+
+====================================================
+4. GET MY PROFILE
+====================================================
+GET {{BASE}}/auth/me/
+Authorization: Bearer <access_token>
+
+Expected: 200 OK + user profile JSON
+
+====================================================
+5. LIST ALL SOCIETIES (with search & filter)
+====================================================
+GET {{BASE}}/societies/
+Authorization: Bearer <access_token>
+
+# With search:
+GET {{BASE}}/societies/?search=swim
+GET {{BASE}}/societies/?category=sports
+
+Expected: 200 OK + list of societies, is_member=false
+
+====================================================
+6. JOIN A SOCIETY
+====================================================
+POST {{BASE}}/societies/1/join/
+Authorization: Bearer <access_token>
+
+Expected: 201 Created + success message
+
+# Try joining same society again:
+Expected: 400 Bad Request + "already a member" error
+
+====================================================
+7. VIEW MY SOCIETIES
+====================================================
+GET {{BASE}}/my-societies/
+Authorization: Bearer <access_token>
+
+Expected: 200 OK + list of joined societies
+
+====================================================
+8. VIEW EVENTS (for joined societies)
+====================================================
+GET {{BASE}}/events/
+Authorization: Bearer <access_token>
+
+# Filter by a specific society:
+GET {{BASE}}/events/?society=1
+
+====================================================
+9. CREATE AN EVENT (admin only)
+====================================================
+POST {{BASE}}/events/create/
+Authorization: Bearer <admin_access_token>
+Content-Type: application/json
+
+{
+  "society": 1,
+  "title": "Freshers Social Night",
+  "description": "Welcome night for new members.",
+  "location": "Student Union Bar",
+  "start_time": "2026-03-15T19:00:00Z",
+  "end_time": "2026-03-15T23:00:00Z",
+  "capacity_limit": 50,
+  "is_public": true
+}
+
+Expected: 201 Created
+
+# Test with end_time before start_time:
+Expected: 400 Bad Request + validation error
+
+====================================================
+10. RSVP TO AN EVENT
+====================================================
+POST {{BASE}}/events/1/rsvp/
+Authorization: Bearer <access_token>
+Content-Type: application/json
+
+{
+  "is_attending": true
+}
+
+Expected: 200/201 + rsvp_count updated
+
+# Cancel RSVP:
+{ "is_attending": false }
+
+====================================================
+11. LEAVE A SOCIETY
+====================================================
+POST {{BASE}}/societies/1/leave/
+Authorization: Bearer <access_token>
+
+Expected: 200 OK + success message
+
+====================================================
+NOTES:
+- All protected endpoints need: Authorization: Bearer <token>
+- Tokens expire after 1 day (configured in settings.py)
+- Django admin panel at: http://127.0.0.1:8000/admin
+  Use your superuser credentials to add/edit data visually
