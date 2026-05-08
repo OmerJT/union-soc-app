@@ -177,3 +177,44 @@ class UniSocAPITestCase(APITestCase):
         self.event.refresh_from_db()
         self.assertTrue(self.event.is_full)
         self.assertEqual(self.event.spaces_remaining, 0)
+
+    def test_notification_preferences_and_event_notifications(self):
+        """Test notification system and user preferences."""
+        Membership.objects.create(user=self.profile, society=self.society, notifications_enabled=True)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {RefreshToken.for_user(self.admin_user).access_token}')
+
+        # Create event as admin
+        response = self.client.post(reverse('event-create'), {
+            'society': self.society.id,
+            'title': 'New Social',
+            'description': 'Games night',
+            'location': 'Union',
+            'start_time': (timezone.now() + timezone.timedelta(days=3)).isoformat(),
+            'end_time': (timezone.now() + timezone.timedelta(days=3, hours=2)).isoformat(),
+            'capacity_limit': 30,
+            'is_public': True,
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Check notification was created
+        self.assertTrue(Notification.objects.filter(recipient=self.profile, title__icontains='New event').exists())
+
+    def test_notification_preferences_disabled(self):
+        """Test that users with disabled notifications don't receive them."""
+        Membership.objects.create(user=self.profile, society=self.society, notifications_enabled=False)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {RefreshToken.for_user(self.admin_user).access_token}')
+
+        # Create event
+        self.client.post(reverse('event-create'), {
+            'society': self.society.id,
+            'title': 'Another Event',
+            'description': 'Test event',
+            'location': 'Room 2',
+            'start_time': (timezone.now() + timezone.timedelta(days=5)).isoformat(),
+            'end_time': (timezone.now() + timezone.timedelta(days=5, hours=1)).isoformat(),
+            'capacity_limit': 10,
+            'is_public': True,
+        }, format='json')
+
+        # User should not receive notification
+        self.assertFalse(Notification.objects.filter(recipient=self.profile).exists())
