@@ -218,3 +218,22 @@ class UniSocAPITestCase(APITestCase):
 
         # User should not receive notification
         self.assertFalse(Notification.objects.filter(recipient=self.profile).exists())
+
+    def test_chat_message_can_be_sent_by_member(self):
+        """Test chat functionality for society members."""
+        Membership.objects.create(user=self.profile, society=self.society)
+
+        # Send message
+        response = self.client.post(reverse('society-chat', args=[self.society.id]), {'message': 'Hi admin'}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(ChatMessage.objects.filter(society=self.society).count(), 1)
+
+        # Check message details
+        message = ChatMessage.objects.first()
+        self.assertEqual(message.message, 'Hi admin')
+        self.assertEqual(message.sender, self.profile)
+
+    def test_chat_requires_membership(self):
+        """Test that only members can send chat messages."""
+        response = self.client.post(reverse('society-chat', args=[self.society.id]), {'message': 'Hi'}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
