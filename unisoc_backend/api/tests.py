@@ -107,3 +107,21 @@ class UniSocAPITestCase(APITestCase):
         # Verify password changed
         self.user.refresh_from_db()
         self.assertTrue(self.user.check_password('NewPassword123'))
+
+    def test_user_can_join_leave_and_duplicate_join_is_blocked(self):
+        """Test society membership operations."""
+        join_url = reverse('society-join', args=[self.society.id])
+        response = self.client.post(join_url)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(Membership.objects.filter(user=self.profile, society=self.society).exists())
+        self.assertTrue(AuditLog.objects.filter(action='join_society', success=True).exists())
+
+        # Duplicate join should fail
+        duplicate = self.client.post(join_url)
+        self.assertEqual(duplicate.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(AuditLog.objects.filter(action='join_society', success=False).exists())
+
+        # Leave society
+        leave = self.client.post(reverse('society-leave', args=[self.society.id]))
+        self.assertEqual(leave.status_code, status.HTTP_200_OK)
+        self.assertFalse(Membership.objects.filter(user=self.profile, society=self.society).exists())
