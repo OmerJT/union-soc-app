@@ -137,7 +137,7 @@ class _AdminScreenState extends State<AdminScreen> {
           TextField(controller: _societyDescription, decoration: const InputDecoration(labelText: 'Description', border: OutlineInputBorder())),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
-            value: _societyCategory,
+            initialValue: _societyCategory,
             decoration: const InputDecoration(labelText: 'Category', border: OutlineInputBorder()),
             items: const ['cultural', 'academic', 'religious', 'sports', 'extracurricular'].map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
             onChanged: (v) => setState(() => _societyCategory = v ?? 'extracurricular'),
@@ -153,7 +153,7 @@ class _AdminScreenState extends State<AdminScreen> {
           _sectionTitle('Create / edit / remove events'),
           if (_societies.isNotEmpty)
             DropdownButtonFormField<int>(
-              value: _eventSocietyId,
+              initialValue: _eventSocietyId,
               decoration: const InputDecoration(labelText: 'Society', border: OutlineInputBorder()),
               items: _societies.map<DropdownMenuItem<int>>((s) => DropdownMenuItem(value: s['id'], child: Text(s['name']))).toList(),
               onChanged: (v) => setState(() => _eventSocietyId = v),

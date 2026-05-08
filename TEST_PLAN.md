@@ -48,6 +48,54 @@ This document outlines the comprehensive test plan for the UniSoc university soc
 - UI/UX validation
 - Cross-platform functionality
 
+## 4.4 Test Case Design Methodology
+
+### Equivalence Partitioning
+Input data is divided into valid and invalid partitions to ensure comprehensive coverage:
+
+**User Registration Partitions:**
+- **Valid UP Numbers**: UP123456, UP999999 (format: UP followed by 6 digits)
+- **Invalid UP Numbers**: UP12345 (too short), UP1234567 (too long), UPABC123 (non-numeric)
+- **Admin Exemption**: Empty UP number field for admin role
+
+**Password Complexity Partitions:**
+- **Valid Passwords**: Password123 (meets complexity requirements)
+- **Invalid Passwords**: password (no uppercase/capital), Password (no numbers), Pass1 (too short)
+
+**Event Capacity Partitions:**
+- **Valid Capacities**: 1-1000 (reasonable range for university events)
+- **Invalid Capacities**: 0 (no capacity), -1 (negative), 10000 (excessive)
+
+### Boundary Value Analysis
+Testing at the edges of input ranges:
+
+**String Length Boundaries:**
+- **Username**: 1 character (minimum), 150 characters (Django default max), 151+ characters (overflow)
+- **Society Description**: Empty string, 1000 characters (reasonable limit), 10000+ characters (excessive)
+
+**Numeric Boundaries:**
+- **Event Capacity**: 0 (invalid), 1 (minimum valid), 1000 (maximum reasonable), 1001 (overflow)
+- **RSVP Count**: 0 (no attendees), capacity-1 (almost full), capacity (exactly full), capacity+1 (overbooked)
+
+### State Transition Testing
+Testing system state changes and transitions:
+
+**User State Transitions:**
+- Unregistered → Registered (successful registration)
+- Registered → Authenticated (successful login)
+- Authenticated → Society Member (join society)
+- Society Member → Event Attendee (successful RSVP)
+
+**Event State Transitions:**
+- Created → RSVP Open (default state)
+- RSVP Open → At Capacity (when capacity reached)
+- At Capacity → Completed (event end time passed)
+
+**Authentication State Transitions:**
+- Logged Out → Logged In (successful authentication)
+- Logged In → Token Expired (JWT expiry)
+- Token Expired → Re-authenticated (token refresh or re-login)
+
 ## 5. Test Environment
 
 - **Backend**: Python 3.8+, Django 4.2+, SQLite
