@@ -1,16 +1,21 @@
-# unisoc_app
+# UniSoc App
 
-A new Flutter project.
+This is the Flutter frontend for UniSoc, our university society management app. It connects to the Django backend for all the data.
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+If you're new to Flutter, check out these resources:
 
-A few resources to get you started if this is your first Flutter project:
+- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
+- [Flutter Cookbook](https://docs.flutter.dev/cookbook)
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+For help, see the [online docs](https://docs.flutter.dev/).
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+To run this app:
+
+1. Make sure you have Flutter installed
+2. Go to this folder
+3. Get dependencies: flutter pub get
+4. Run it: flutter run -d chrome (for web) or your device
+
+It talks to the backend at http://127.0.0.1:8000/api, so start that first.
