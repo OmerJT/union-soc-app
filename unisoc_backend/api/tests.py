@@ -144,3 +144,36 @@ class UniSocAPITestCase(APITestCase):
         # Test combined search and filter
         response = self.client.get(reverse('society-list-create'), {'search': 'Soc', 'category': 'academic'})
         self.assertEqual(len(response.data), 2)
+
+    def test_rsvp_requires_membership_and_tracks_capacity(self):
+        """Test RSVP functionality with membership and capacity constraints."""
+        # Try RSVP without membership
+        response = self.client.post(reverse('event-rsvp', args=[self.event.id]), {'is_attending': True}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # Join society first
+        Membership.objects.create(user=self.profile, society=self.society)
+
+        # Now RSVP should work
+        response = self.client.post(reverse('event-rsvp', args=[self.event.id]), {'is_attending': True}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(RSVP.objects.get(user=self.profile, event=self.event).is_attending, True)
+        self.assertEqual(response.data['rsvp_count'], 1)
+        self.assertEqual(response.data['spaces_remaining'], 1)
+
+    def test_event_capacity_limits(self):
+        """Test event capacity limits and full event handling."""
+        Membership.objects.create(user=self.profile, society=self.society)
+        user2 = User.objects.create_user(username='student2', email='student2@example.com', password='Password123')
+        profile2 = UserProfile.objects.create(user=user2, up_number='UP654321', role='user')
+        Membership.objects.create(user=profile2, society=self.society)
+
+        # Fill the event
+        self.client.post(reverse('event-rsvp', args=[self.event.id]), {'is_attending': True}, format='json')
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {RefreshToken.for_user(user2).access_token}')
+        self.client.post(reverse('event-rsvp', args=[self.event.id]), {'is_attending': True}, format='json')
+
+        # Event should now be full
+        self.event.refresh_from_db()
+        self.assertTrue(self.event.is_full)
+        self.assertEqual(self.event.spaces_remaining, 0)
