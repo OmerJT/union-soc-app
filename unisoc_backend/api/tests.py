@@ -237,3 +237,30 @@ class UniSocAPITestCase(APITestCase):
         """Test that only members can send chat messages."""
         response = self.client.post(reverse('society-chat', args=[self.society.id]), {'message': 'Hi'}, format='json')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_admin_can_export_attendance_report(self):
+        """Test admin attendance report export functionality."""
+        Membership.objects.create(user=self.profile, society=self.society)
+        RSVP.objects.create(user=self.profile, event=self.event, is_attending=True)
+
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {RefreshToken.for_user(self.admin_user).access_token}')
+        response = self.client.get(reverse('attendance-report'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('text/csv', response['Content-Type'])
+        self.assertIn(b'Python Workshop', response.content)
+        self.assertIn(b'student1', response.content)
+
+    def test_audit_log_tracks_all_actions(self):
+        """Test that audit logs are created for key actions."""
+        # Create a fresh user for this test to avoid membership conflicts
+        fresh_user = User.objects.create_user(username='fresh_student', email='fresh@example.com', password='Password123')
+        fresh_profile = UserProfile.objects.create(user=fresh_user, up_number='UP111111', role='user')
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {RefreshToken.for_user(fresh_user).access_token}')
+
+        # Join society
+        self.client.post(reverse('society-join', args=[self.society.id]))
+        self.assertTrue(AuditLog.objects.filter(action='join_society', actor=fresh_profile).exists())
+
+        # RSVP to event
+        self.client.post(reverse('event-rsvp', args=[self.event.id]), {'is_attending': True}, format='json')
+        self.assertTrue(AuditLog.objects.filter(action='rsvp', actor=fresh_profile).exists())
