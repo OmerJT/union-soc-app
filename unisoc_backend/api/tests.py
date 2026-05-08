@@ -79,3 +79,31 @@ class UniSocAPITestCase(APITestCase):
             'password': 'WrongPassword'
         }, format='json')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_forgot_password_request(self):
+        """Test password reset request generates token."""
+        response = self.client.post(reverse('forgot-password'), {
+            'username_or_email': 'student1'
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # In production, this would send email, but for testing we return the token
+        self.assertIn('reset_token', response.data)
+
+    def test_password_reset_with_valid_token(self):
+        """Test password reset with valid token."""
+        # First request reset
+        reset_response = self.client.post(reverse('forgot-password'), {
+            'username_or_email': 'student1'
+        }, format='json')
+        token = reset_response.data['reset_token']
+
+        # Then reset password
+        response = self.client.post(reverse('reset-password'), {
+            'token': token,
+            'new_password': 'NewPassword123'
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Verify password changed
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password('NewPassword123'))
