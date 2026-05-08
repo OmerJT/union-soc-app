@@ -264,3 +264,62 @@ class UniSocAPITestCase(APITestCase):
         # RSVP to event
         self.client.post(reverse('event-rsvp', args=[self.event.id]), {'is_attending': True}, format='json')
         self.assertTrue(AuditLog.objects.filter(action='rsvp', actor=fresh_profile).exists())
+
+    def test_profile_update_functionality(self):
+        """Test user profile update operations."""
+        update_data = {
+            'first_name': 'Updated',
+            'last_name': 'Name',
+            'email': 'updated@example.com'
+        }
+        response = self.client.patch(reverse('me'), update_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Check profile was updated
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.first_name, 'Updated')
+        self.assertEqual(self.user.last_name, 'Name')
+        self.assertEqual(self.user.email, 'updated@example.com')
+
+    def test_society_notification_preference_toggle(self):
+        """Test per-society notification preference management."""
+        Membership.objects.create(user=self.profile, society=self.society, notifications_enabled=True)
+
+        # Disable notifications
+        response = self.client.patch(reverse('society-notification-preference', args=[self.society.id]),
+                                   {'notifications_enabled': False}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Check preference was updated
+        membership = Membership.objects.get(user=self.profile, society=self.society)
+        self.assertFalse(membership.notifications_enabled)
+
+    def test_event_creation_validation(self):
+        """Test event creation with proper validation."""
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {RefreshToken.for_user(self.admin_user).access_token}')
+
+        # Valid event creation
+        response = self.client.post(reverse('event-create'), {
+            'society': self.society.id,
+            'title': 'Valid Event',
+            'description': 'Test description',
+            'location': 'Test Location',
+            'start_time': (timezone.now() + timezone.timedelta(days=7)).isoformat(),
+            'end_time': (timezone.now() + timezone.timedelta(days=7, hours=2)).isoformat(),
+            'capacity_limit': 50,
+            'is_public': True,
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Invalid: end time before start time
+        response = self.client.post(reverse('event-create'), {
+            'society': self.society.id,
+            'title': 'Invalid Event',
+            'description': 'Test',
+            'location': 'Test',
+            'start_time': (timezone.now() + timezone.timedelta(days=7)).isoformat(),
+            'end_time': (timezone.now() + timezone.timedelta(days=6)).isoformat(),  # Before start
+            'capacity_limit': 10,
+            'is_public': True,
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
